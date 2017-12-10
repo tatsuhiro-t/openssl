@@ -230,6 +230,12 @@ __owur int SSL_export_keying_material(SSL *s, unsigned char *out, size_t olen,
                                       const unsigned char *context,
                                       size_t contextlen, int use_context);
 
+__owur int SSL_export_keying_material_early(SSL *s, unsigned char *out,
+                                            size_t olen, const char *label,
+                                            size_t llen,
+                                            const unsigned char *context,
+                                            size_t contextlen, int use_context);
+
 int SSL_get_peer_signature_type_nid(const SSL *s, int *pnid);
 
 int SSL_get_sigalgs(SSL *s, int idx,
