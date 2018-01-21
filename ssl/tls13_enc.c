@@ -675,9 +675,7 @@ int tls13_export_keying_material(SSL *s, unsigned char *out, size_t olen,
     unsigned int hashsize, datalen;
     int ret = 0;
 
-    /* TODO exporter should work just after Server Finished
-       message. */
-    if (ctx == NULL) /* || !SSL_is_init_finished(s)) */
+    if (ctx == NULL || !ossl_statem_export_allowed(s))
         goto err;
 
     if (!use_context)
