@@ -543,6 +543,8 @@ static SUB_STATE_RETURN read_state_machine(SSL *s)
 
     cb = get_callback(s);
 
+    fprintf(stderr, "read_state_amchine\n");
+
     if (s->server) {
         transition = ossl_statem_server_read_transition;
         process_message = ossl_statem_server_process_message;

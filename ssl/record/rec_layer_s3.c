@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <errno.h>
+#include <assert.h>
 #include "../ssl_locl.h"
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
@@ -347,6 +348,12 @@ int ssl3_write_bytes(SSL *s, int type, const void *buf_, size_t len,
     int i;
     size_t tmpwrit;
 
+    fprintf(stderr, "ssl3_write_bytes len=%zu\n", len);
+
+    if (1) {
+      return ssl3_write_pending(s, type, buf_, len, written);
+    }
+
     s->rwstate = SSL_NOTHING;
     tot = s->rlayer.wnum;
     /*
@@ -658,6 +665,21 @@ int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
     SSL_SESSION *sess;
     size_t totlen = 0, len, wpinited = 0;
     size_t j;
+
+    if (1) {
+        /* If we have an alert to send, lets send it */
+        if (s->s3->alert_dispatch) {
+            i = s->method->ssl_dispatch_alert(s);
+            if (i <= 0) {
+                /* SSLfatal() already called if appropriate */
+                return i;
+            }
+            /* if it went, fall through and send more stuff */
+        }
+
+        assert(numpipes == 1);
+        return ssl3_write_pending(s, type, buf, pipelens[0], written);
+    }
 
     for (j = 0; j < numpipes; j++)
         totlen += pipelens[j];
@@ -1118,6 +1140,21 @@ int ssl3_write_pending(SSL *s, int type, const unsigned char *buf, size_t len,
     size_t currbuf = 0;
     size_t tmpwrit = 0;
 
+    if (1) {
+        if (s->wbio != NULL) {
+            s->rwstate = SSL_WRITING;
+            /* TODO(size_t): Convert this call */
+            i = BIO_write(s->wbio, (char *)buf, len);
+            assert(i == len);
+            *written = i;
+            return 1;
+        } else {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL3_WRITE_PENDING,
+                     SSL_R_BIO_NOT_SET);
+            return 0;
+        }
+    }
+
     if ((s->rlayer.wpend_tot > len)
         || (!(s->mode & SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER)
             && (s->rlayer.wpend_buf != buf))
@@ -1211,6 +1248,22 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
     void (*cb) (const SSL *ssl, int type2, int val) = NULL;
     int is_tls13 = SSL_IS_TLS13(s);
 
+    fprintf(stderr, "ssl3_read_bytes\n");
+    if (1) {
+        assert(!peek);
+        s->rwstate = SSL_READING;
+        /* TODO(size_t): Convert this function */
+        ret = BIO_read(s->rbio, buf, len);
+        if (ret >= 0) {
+            *readbytes = ret;
+            if (recvd_type) {
+              *recvd_type = type;
+            }
+            return 1;
+        }
+        return -1;
+    }
+
     rbuf = &s->rlayer.rbuf;
 
     if (!SSL3_BUFFER_is_initialised(rbuf)) {
@@ -1253,6 +1306,9 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             *recvd_type = SSL3_RT_HANDSHAKE;
 
         *readbytes = n;
+
+        fprintf(stderr, "ssl3_read_bytes *readbytes=%zu\n", *readbytes);
+
         return 1;
     }
 
@@ -1419,6 +1475,7 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             && SSL3_BUFFER_get_left(rbuf) == 0)
             ssl3_release_read_buffer(s);
         *readbytes = totalbytes;
+        fprintf(stderr, "ssl3_read_bytes *readbytes=%zu\n", *readbytes);
         return 1;
     }
 

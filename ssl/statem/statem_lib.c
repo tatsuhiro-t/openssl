@@ -1137,6 +1137,8 @@ int tls_get_message_header(SSL *s, int *mt)
     unsigned char *p;
     size_t l, readbytes;
 
+    fprintf(stderr, "get msg header\n");
+
     p = (unsigned char *)s->init_buf->data;
 
     do {
@@ -1209,6 +1211,8 @@ int tls_get_message_header(SSL *s, int *mt)
 
     *mt = *p;
     s->s3->tmp.message_type = *(p++);
+
+    fprintf(stderr, "*mt=%d\n", *mt);
 
     if (RECORD_LAYER_is_sslv2_record(&s->rlayer)) {
         /*
