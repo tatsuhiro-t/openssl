@@ -1250,6 +1250,21 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
 
     fprintf(stderr, "ssl3_read_bytes\n");
     if (1) {
+        if (/* (s->rlayer.handshake_fragment_len >= 4) && */
+            !ossl_statem_get_in_handshake(s)) {
+            /* We found handshake data, so we're going back into init */
+            ossl_statem_set_in_init(s, 1);
+
+            i = s->handshake_func(s);
+            /* SSLfatal() already called if appropriate */
+            if (i < 0)
+                return i;
+            if (i == 0) {
+                return -1;
+            }
+            return 1;
+        }
+
         assert(!peek);
         s->rwstate = SSL_READING;
         /* TODO(size_t): Convert this function */
