@@ -351,7 +351,19 @@ int ssl3_write_bytes(SSL *s, int type, const void *buf_, size_t len,
     fprintf(stderr, "ssl3_write_bytes len=%zu\n", len);
 
     if (1) {
-      return ssl3_write_pending(s, type, buf_, len, written);
+        /* If we have an alert to send, lets send it */
+        if (s->s3->alert_dispatch) {
+            i = s->method->ssl_dispatch_alert(s);
+            if (i <= 0) {
+                /* SSLfatal() already called if appropriate */
+                return i;
+            }
+        }
+
+        s->rwstate = SSL_WRITING;
+        *written = len;
+
+        return 1;
     }
 
     s->rwstate = SSL_NOTHING;
@@ -666,20 +678,7 @@ int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
     size_t totlen = 0, len, wpinited = 0;
     size_t j;
 
-    if (1) {
-        /* If we have an alert to send, lets send it */
-        if (s->s3->alert_dispatch) {
-            i = s->method->ssl_dispatch_alert(s);
-            if (i <= 0) {
-                /* SSLfatal() already called if appropriate */
-                return i;
-            }
-            /* if it went, fall through and send more stuff */
-        }
-
-        assert(numpipes == 1);
-        return ssl3_write_pending(s, type, buf, pipelens[0], written);
-    }
+    assert(0);
 
     for (j = 0; j < numpipes; j++)
         totlen += pipelens[j];
@@ -1140,20 +1139,7 @@ int ssl3_write_pending(SSL *s, int type, const unsigned char *buf, size_t len,
     size_t currbuf = 0;
     size_t tmpwrit = 0;
 
-    if (1) {
-        if (s->wbio != NULL) {
-            s->rwstate = SSL_WRITING;
-            /* TODO(size_t): Convert this call */
-            i = BIO_write(s->wbio, (char *)buf, len);
-            assert(i == len);
-            *written = i;
-            return 1;
-        } else {
-            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL3_WRITE_PENDING,
-                     SSL_R_BIO_NOT_SET);
-            return 0;
-        }
-    }
+    assert(0);
 
     if ((s->rlayer.wpend_tot > len)
         || (!(s->mode & SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER)
