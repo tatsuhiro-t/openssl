@@ -92,10 +92,8 @@ static int ossl_statem_client13_read_transition(SSL *s, int mt)
      * ossl_statem_client_read_transition()
      */
 
-    fprintf(stderr, "st->hand_state=%d mt=%d\n", st->hand_state, mt);
     switch (st->hand_state) {
     default:
-        fprintf(stderr, "no valid state to transit\n");
         break;
 
     case TLS_ST_CW_CLNT_HELLO:
@@ -114,7 +112,6 @@ static int ossl_statem_client13_read_transition(SSL *s, int mt)
             st->hand_state = TLS_ST_CR_ENCRYPTED_EXTENSIONS;
             return 1;
         }
-        fprintf(stderr, "mt=%d\n", mt);
         break;
 
     case TLS_ST_CR_ENCRYPTED_EXTENSIONS:
