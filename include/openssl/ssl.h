@@ -494,6 +494,8 @@ typedef int (*SSL_verify_cb)(int preverify_ok, X509_STORE_CTX *x509_ctx);
  */
 # define SSL_MODE_ASYNC 0x00000100U
 
+# define SSL_MODE_QUIC_HACK 0x00000800U
+
 /* Cert related flags */
 /*
  * Many implementations ignore some aspects of the TLS standards such as

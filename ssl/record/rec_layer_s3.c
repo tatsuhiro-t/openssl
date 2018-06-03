@@ -350,7 +350,7 @@ int ssl3_write_bytes(SSL *s, int type, const void *buf_, size_t len,
 
     fprintf(stderr, "ssl3_write_bytes len=%zu\n", len);
 
-    if (1) {
+    if (s->mode & SSL_MODE_QUIC_HACK) {
         /* If we have an alert to send, lets send it */
         if (s->s3->alert_dispatch) {
             i = s->method->ssl_dispatch_alert(s);
@@ -678,7 +678,9 @@ int do_ssl3_write(SSL *s, int type, const unsigned char *buf,
     size_t totlen = 0, len, wpinited = 0;
     size_t j;
 
-    assert(0);
+    if (s->mode & SSL_MODE_QUIC_HACK) {
+        assert(0);
+    }
 
     for (j = 0; j < numpipes; j++)
         totlen += pipelens[j];
@@ -1139,7 +1141,9 @@ int ssl3_write_pending(SSL *s, int type, const unsigned char *buf, size_t len,
     size_t currbuf = 0;
     size_t tmpwrit = 0;
 
-    assert(0);
+    if (s->mode & SSL_MODE_QUIC_HACK) {
+        assert(0);
+    }
 
     if ((s->rlayer.wpend_tot > len)
         || (!(s->mode & SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER)
@@ -1244,7 +1248,7 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
         }
     }
 
-    if (1) {
+    if (s->mode & SSL_MODE_QUIC_HACK) {
         /* In QUIC, we only expect handshake protocol.  Alerts are
            notified by decicated API function. */
         if (!ossl_statem_get_in_handshake(s)) {
