@@ -4283,6 +4283,16 @@ void SSL_set_msg_callback(SSL *ssl,
     SSL_callback_ctrl(ssl, SSL_CTRL_SET_MSG_CALLBACK, (void (*)(void))cb);
 }
 
+void SSL_set_key_callback(SSL *ssl,
+                          void (*cb)(SSL *ssl, int key,
+                                     const unsigned char *data, size_t len,
+                                     void *arg),
+                          void *arg)
+{
+    ssl->key_callback = cb;
+    ssl->key_callback_arg = arg;
+}
+
 void SSL_CTX_set_not_resumable_session_callback(SSL_CTX *ctx,
                                                 int (*cb) (SSL *ssl,
                                                            int

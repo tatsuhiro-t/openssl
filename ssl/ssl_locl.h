@@ -1123,6 +1123,9 @@ struct ssl_st {
     void (*msg_callback) (int write_p, int version, int content_type,
                           const void *buf, size_t len, SSL *ssl, void *arg);
     void *msg_callback_arg;
+    void (*key_callback)(SSL *ssl, int key, const unsigned char *data,
+                         size_t len, void *arg);
+    void *key_callback_arg;
     int hit;                    /* reusing a previous session */
     X509_VERIFY_PARAM *param;
     /* Per connection DANE state */
