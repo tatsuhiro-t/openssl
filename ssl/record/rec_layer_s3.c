@@ -1234,8 +1234,6 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
     void (*cb) (const SSL *ssl, int type2, int val) = NULL;
     int is_tls13 = SSL_IS_TLS13(s);
 
-    fprintf(stderr, "ssl3_read_bytes\n");
-
     rbuf = &s->rlayer.rbuf;
 
     if (!SSL3_BUFFER_is_initialised(rbuf)) {
@@ -1248,7 +1246,7 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
 
     if (1) {
         /* In QUIC, we only expect handshake protocol.  Alerts are
-           notified by the callback function. */
+           notified by decicated API function. */
         if (!ossl_statem_get_in_handshake(s)) {
             /* We found handshake data, so we're going back into init */
             ossl_statem_set_in_init(s, 1);
@@ -1260,13 +1258,9 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             if (i == 0) {
                 return -1;
             }
+            *readbytes = 0;
             return 1;
         }
-
-        fprintf(
-            stderr,
-            "packet_length=%zu rbuf->offset=%zu rbuf->left=%zu rbuf->len=%zu\n",
-            s->rlayer.packet_length, rbuf->offset, rbuf->left, rbuf->len);
 
         if (s->rlayer.packet_length == 0) {
             if (rbuf->left < 4) {
@@ -1292,11 +1286,6 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
                 rbuf->offset += ret;
 
                 if (rbuf->left < 4) {
-                    fprintf(
-                        stderr,
-                        "Not enough bytes to read handshake message header: "
-                        "left=%zu\n",
-                        4 - rbuf->left);
                     *readbytes = 0;
                     return 1;
                 }
@@ -1329,9 +1318,6 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             s->rlayer.packet_length = (rbuf->buf[rbuf->offset + 1] << 16)
                                       + (rbuf->buf[rbuf->offset + 2] << 8)
                                       + rbuf->buf[rbuf->offset + 3] + 4;
-
-            fprintf(stderr, "handshake message length=%zu\n",
-                    s->rlayer.packet_length - 4);
         }
 
         if (s->rlayer.packet_length) {
@@ -1341,7 +1327,6 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             if (rbuf->left == 0) {
                 s->rwstate = SSL_READING;
                 ret = BIO_read(s->rbio, buf, n);
-                fprintf(stderr, "BIO_read returns %d\n", ret);
                 if (ret >= 0) {
                     s->rlayer.packet_length -= n;
                     *readbytes = ret;
@@ -1407,9 +1392,6 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             *recvd_type = SSL3_RT_HANDSHAKE;
 
         *readbytes = n;
-
-        fprintf(stderr, "ssl3_read_bytes *readbytes=%zu\n", *readbytes);
-
         return 1;
     }
 
@@ -1576,7 +1558,6 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
             && SSL3_BUFFER_get_left(rbuf) == 0)
             ssl3_release_read_buffer(s);
         *readbytes = totalbytes;
-        fprintf(stderr, "ssl3_read_bytes *readbytes=%zu\n", *readbytes);
         return 1;
     }
 
