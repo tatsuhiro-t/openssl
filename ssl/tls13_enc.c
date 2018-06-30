@@ -29,7 +29,10 @@ int tls13_hkdf_expand(SSL *s, const EVP_MD *md, const unsigned char *secret,
                              const unsigned char *data, size_t datalen,
                              unsigned char *out, size_t outlen)
 {
-    const unsigned char label_prefix[] = "tls13 ";
+    const unsigned char tls13_label_prefix[] = "tls13 ";
+    const unsigned char quic_label_prefix[] = "quic ";
+    const unsigned char *label_prefix;
+    size_t label_prefixlen;
     EVP_PKEY_CTX *pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     int ret;
     size_t hkdflabellen;
@@ -38,20 +41,28 @@ int tls13_hkdf_expand(SSL *s, const EVP_MD *md, const unsigned char *secret,
      * 2 bytes for length of whole HkdfLabel + 1 byte for length of combined
      * prefix and label + bytes for the label itself + bytes for the hash
      */
-    unsigned char hkdflabel[sizeof(uint16_t) + sizeof(uint8_t) +
-                            + sizeof(label_prefix) + TLS13_MAX_LABEL_LEN
+    unsigned char hkdflabel[sizeof(uint16_t) + sizeof(uint8_t)
+                            + sizeof(tls13_label_prefix) + TLS13_MAX_LABEL_LEN
                             + EVP_MAX_MD_SIZE];
     WPACKET pkt;
 
     if (pctx == NULL)
         return 0;
 
+    if (s->mode & SSL_MODE_QUIC_HACK) {
+        label_prefix = quic_label_prefix;
+        label_prefixlen = sizeof(quic_label_prefix) - 1;
+    } else {
+        label_prefix = tls13_label_prefix;
+        label_prefixlen = sizeof(tls13_label_prefix) - 1;
+    }
+
     hashlen = EVP_MD_size(md);
 
     if (!WPACKET_init_static_len(&pkt, hkdflabel, sizeof(hkdflabel), 0)
             || !WPACKET_put_bytes_u16(&pkt, outlen)
             || !WPACKET_start_sub_packet_u8(&pkt)
-            || !WPACKET_memcpy(&pkt, label_prefix, sizeof(label_prefix) - 1)
+            || !WPACKET_memcpy(&pkt, label_prefix, label_prefixlen)
             || !WPACKET_memcpy(&pkt, label, labellen)
             || !WPACKET_close(&pkt)
             || !WPACKET_sub_memcpy_u8(&pkt, data, (data == NULL) ? 0 : datalen)
