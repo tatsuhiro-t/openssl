@@ -320,9 +320,9 @@ static int derive_secret_key_and_iv(SSL *s, int sending, const EVP_MD *md,
                                     const unsigned char *hash,
                                     const unsigned char *label,
                                     size_t labellen, unsigned char *secret,
+                                    unsigned char *key,
                                     unsigned char *iv, EVP_CIPHER_CTX *ciph_ctx)
 {
-    unsigned char key[EVP_MAX_KEY_LENGTH];
     size_t ivlen, keylen, taglen;
     int hashleni = EVP_MD_size(md);
     size_t hashlen;
@@ -394,6 +394,7 @@ int tls13_change_cipher_state(SSL *s, int which)
     static const unsigned char exporter_master_secret[] = "exp master";
     static const unsigned char resumption_master_secret[] = "res master";
     static const unsigned char early_exporter_master_secret[] = "e exp master";
+    unsigned char key[EVP_MAX_KEY_LENGTH];
     unsigned char *iv;
     unsigned char secret[EVP_MAX_MD_SIZE];
     unsigned char hashval[EVP_MAX_MD_SIZE];
@@ -610,8 +611,8 @@ int tls13_change_cipher_state(SSL *s, int which)
     }
 
     if (!derive_secret_key_and_iv(s, which & SSL3_CC_WRITE, md, cipher,
-                                  insecret, hash, label, labellen, secret, iv,
-                                  ciph_ctx)) {
+                                  insecret, hash, label, labellen, secret, key,
+                                  iv, ciph_ctx)) {
         /* SSLfatal() already called */
         goto err;
     }
@@ -633,7 +634,9 @@ int tls13_change_cipher_state(SSL *s, int which)
                      ERR_R_INTERNAL_ERROR);
             goto err;
         }
-        s->key_callback(s, type, secret, hashlen, s->key_callback_arg);
+        s->key_callback(
+            s, type, secret, hashlen, key, EVP_CIPHER_CTX_key_length(ciph_ctx),
+            iv, EVP_CIPHER_CTX_iv_length(ciph_ctx), s->key_callback_arg);
     }
 
     if (label == server_application_traffic) {
@@ -679,6 +682,7 @@ int tls13_update_key(SSL *s, int sending)
 {
     static const unsigned char application_traffic[] = "traffic upd";
     const EVP_MD *md = ssl_handshake_md(s);
+    unsigned char key[EVP_MAX_KEY_LENGTH];
     size_t hashlen = EVP_MD_size(md);
     unsigned char *insecret, *iv;
     unsigned char secret[EVP_MAX_MD_SIZE];
@@ -701,11 +705,10 @@ int tls13_update_key(SSL *s, int sending)
         RECORD_LAYER_reset_read_sequence(&s->rlayer);
     }
 
-    if (!derive_secret_key_and_iv(s, sending, ssl_handshake_md(s),
-                                  s->s3->tmp.new_sym_enc, insecret, NULL,
-                                  application_traffic,
-                                  sizeof(application_traffic) - 1, secret, iv,
-                                  ciph_ctx)) {
+    if (!derive_secret_key_and_iv(
+            s, sending, ssl_handshake_md(s), s->s3->tmp.new_sym_enc, insecret,
+            NULL, application_traffic, sizeof(application_traffic) - 1, secret,
+            key, iv, ciph_ctx)) {
         /* SSLfatal() already called */
         goto err;
     }

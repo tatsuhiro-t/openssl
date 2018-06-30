@@ -4284,9 +4284,11 @@ void SSL_set_msg_callback(SSL *ssl,
 }
 
 void SSL_set_key_callback(SSL *ssl,
-                          void (*cb)(SSL *ssl, int key,
-                                     const unsigned char *data, size_t len,
-                                     void *arg),
+                          void (*cb)(SSL *ssl, int name,
+                                     const unsigned char *secret,
+                                     size_t secretlen, const unsigned char *key,
+                                     size_t keylen, const unsigned char *iv,
+                                     size_t ivlen, void *arg),
                           void *arg)
 {
     ssl->key_callback = cb;
