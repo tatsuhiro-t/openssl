@@ -645,9 +645,14 @@ int tls13_change_cipher_state(SSL *s, int which)
                      ERR_R_INTERNAL_ERROR);
             goto err;
         }
-        s->key_callback(
-            s, type, secret, hashlen, key, EVP_CIPHER_CTX_key_length(ciph_ctx),
-            iv, EVP_CIPHER_CTX_iv_length(ciph_ctx), s->key_callback_arg);
+        if (!s->key_callback(s, type, secret, hashlen, key,
+                             EVP_CIPHER_CTX_key_length(ciph_ctx), iv,
+                             EVP_CIPHER_CTX_iv_length(ciph_ctx),
+                             s->key_callback_arg)) {
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_TLS13_CHANGE_CIPHER_STATE,
+                     ERR_R_INTERNAL_ERROR);
+            goto err;
+        }
     }
 
     if (label == server_application_traffic) {

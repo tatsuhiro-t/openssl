@@ -632,11 +632,11 @@ typedef enum {
 } OSSL_KEY_TYPE;
 
 void SSL_set_key_callback(SSL *ssl,
-                          void (*cb)(SSL *ssl, int name,
-                                     const unsigned char *secret,
-                                     size_t secretlen, const unsigned char *key,
-                                     size_t keylen, const unsigned char *iv,
-                                     size_t ivlen, void *arg),
+                          int (*cb)(SSL *ssl, int name,
+                                    const unsigned char *secret,
+                                    size_t secretlen, const unsigned char *key,
+                                    size_t keylen, const unsigned char *iv,
+                                    size_t ivlen, void *arg),
                           void *arg);
 
 # define SSL_get_extms_support(s) \
