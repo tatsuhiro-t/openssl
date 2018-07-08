@@ -653,6 +653,32 @@ int tls13_change_cipher_state(SSL *s, int which)
                      ERR_R_INTERNAL_ERROR);
             goto err;
         }
+
+        if (s->server) {
+            switch (type) {
+            case SSL_KEY_CLIENT_HANDSHAKE_TRAFFIC:
+            case SSL_KEY_CLIENT_APPLICATION_TRAFFIC:
+                if (s->rlayer.rbuf.left) {
+                    SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+                             SSL_F_TLS13_CHANGE_CIPHER_STATE,
+                             ERR_R_INTERNAL_ERROR);
+                    goto err;
+                }
+                break;
+            }
+        } else {
+            switch (type) {
+            case SSL_KEY_SERVER_HANDSHAKE_TRAFFIC:
+            case SSL_KEY_SERVER_APPLICATION_TRAFFIC:
+                if (s->rlayer.rbuf.left) {
+                    SSLfatal(s, SSL_AD_INTERNAL_ERROR,
+                             SSL_F_TLS13_CHANGE_CIPHER_STATE,
+                             ERR_R_INTERNAL_ERROR);
+                    goto err;
+                }
+                break;
+            }
+        }
     }
 
     if (label == server_application_traffic) {
