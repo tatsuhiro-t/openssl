@@ -1332,7 +1332,7 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
                 s->rwstate = SSL_READING;
                 ret = BIO_read(s->rbio, buf, n);
                 if (ret >= 0) {
-                    s->rlayer.packet_length -= n;
+                    s->rlayer.packet_length -= ret;
                     *readbytes = ret;
                     if (recvd_type) {
                         *recvd_type = SSL3_RT_HANDSHAKE;
