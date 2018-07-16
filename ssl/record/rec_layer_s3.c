@@ -1296,24 +1296,43 @@ int ssl3_read_bytes(SSL *s, int type, int *recvd_type, unsigned char *buf,
                 rbuf->offset -= rbuf->left;
             }
 
-            fprintf(stderr, "handshake message type=%u\n", rbuf->buf[0]);
-
             switch (rbuf->buf[rbuf->offset]) {
             case SSL3_MT_CLIENT_HELLO:
+                fprintf(stderr, "client hello\n");
+                break;
             case SSL3_MT_SERVER_HELLO:
+                fprintf(stderr, "server hello\n");
+                break;
             case SSL3_MT_NEWSESSION_TICKET:
-            case SSL3_MT_END_OF_EARLY_DATA: /* TODO Is this needed? */
+                fprintf(stderr, "new session ticket\n");
+                break;
+            case SSL3_MT_END_OF_EARLY_DATA:
+                fprintf(stderr, "end of early data\n");
+                break;
             case SSL3_MT_ENCRYPTED_EXTENSIONS:
+                fprintf(stderr, "encrypted extensions\n");
+                break;
             case SSL3_MT_CERTIFICATE:
+                fprintf(stderr, "certificate\n");
+                break;
             case SSL3_MT_CERTIFICATE_REQUEST:
+                fprintf(stderr, "certificate request\n");
+                break;
             case SSL3_MT_CERTIFICATE_VERIFY:
+                fprintf(stderr, "certificate verify\n");
+                break;
             case SSL3_MT_FINISHED:
+                fprintf(stderr, "finished\n");
+                break;
             case SSL3_MT_KEY_UPDATE:
+                fprintf(stderr, "key update\n");
+                break;
             case SSL3_MT_MESSAGE_HASH:
+                fprintf(stderr, "message hash\n");
                 break;
             default:
                 fprintf(stderr, "unexpected handshake type %02x received\n",
-                        rbuf->buf[0]);
+                        rbuf->buf[rbuf->offset]);
                 SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_SSL3_READ_BYTES,
                          ERR_R_INTERNAL_ERROR);
                 return -1;
