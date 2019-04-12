@@ -9,6 +9,9 @@
 
  Changes between 1.1.1 and 3.0.0 [xx XXX xxxx]
 
+  *) Implement BoringSSL's QUIC API
+     [Todd Short]
+
   *) Revised BN_generate_prime_ex to not avoid factors 2..17863 in p-1
      when primes for RSA keys are computed.
      Since we previously always generated primes == 2 (mod 3) for RSA keys,

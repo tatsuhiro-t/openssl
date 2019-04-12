@@ -1,5 +1,5 @@
 /*
- * Copyright 2001-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2001-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -192,6 +192,8 @@ typedef struct ossl_dispatch_st OSSL_DISPATCH;
 typedef struct ossl_item_st OSSL_ITEM;
 typedef struct ossl_algorithm_st OSSL_ALGORITHM;
 typedef struct ossl_param_st OSSL_PARAM;
+
+typedef struct ssl_quic_method_st SSL_QUIC_METHOD;
 
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L && \
     defined(INTMAX_MAX) && defined(UINTMAX_MAX)

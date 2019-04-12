@@ -476,6 +476,9 @@
   no-psk
                    Don't build support for Pre-Shared Key based ciphersuites.
 
+  no-quic
+                   Don't build support for QUIC support.
+
   no-rdrand
                    Don't use hardware RDRAND capabilities.
 

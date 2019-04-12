@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -43,9 +43,23 @@ int ssl3_do_write(SSL *s, int type)
 {
     int ret;
     size_t written = 0;
+#ifndef OPENSSL_NO_QUIC
+    if (SSL_IS_QUIC(s) && type == SSL3_RT_HANDSHAKE) {
+        ret = s->quic_method->add_handshake_data(s, s->quic_write_level,
+                                                 (const uint8_t*)&s->init_buf->data[s->init_off],
+                                          s->init_num);
+        if (!ret) {
+            ret = -1;
+            /* QUIC can't sent anything out sice the above failed */
+            SSLerr(SSL_F_SSL3_DO_WRITE, SSL_R_INTERNAL_ERROR);
+        } else {
+            written = s->init_num;
+        }
+    } else
+#endif
+        ret = ssl3_write_bytes(s, type, &s->init_buf->data[s->init_off],
+                               s->init_num, &written);
 
-    ret = ssl3_write_bytes(s, type, &s->init_buf->data[s->init_off],
-                           s->init_num, &written);
     if (ret < 0)
         return -1;
     if (type == SSL3_RT_HANDSHAKE)
@@ -1150,6 +1164,7 @@ int tls_get_message_header(SSL *s, int *mt)
 
     do {
         while (s->init_num < SSL3_HM_HEADER_LENGTH) {
+            /* QUIC: either create a special ssl_read_bytes... or if/else this */
             i = s->method->ssl_read_bytes(s, SSL3_RT_HANDSHAKE, &recvd_type,
                                           &p[s->init_num],
                                           SSL3_HM_HEADER_LENGTH - s->init_num,
