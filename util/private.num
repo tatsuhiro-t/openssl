@@ -99,6 +99,8 @@ pem_password_cb                         datatype
 ssl_ct_validation_cb                    datatype
 ASYNC_callback_fn                       datatype
 SSL_async_callback_fn                   datatype
+OSSL_ENCRYPTION_LEVEL                   datatype
+SSL_QUIC_METHOD                         datatype
 #
 BIO_append_filename                     define
 BIO_destroy_bio_pair                    define

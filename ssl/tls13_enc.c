@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2019 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -461,6 +461,9 @@ int tls13_change_cipher_state(SSL *s, int which)
     int ret = 0;
     const EVP_MD *md = NULL;
     const EVP_CIPHER *cipher = NULL;
+#ifndef OPENSSL_NO_QUIC
+    OSSL_ENCRYPTION_LEVEL level = ssl_encryption_initial;
+#endif
 
     if (which & SSL3_CC_READ) {
         if (s->enc_read_ctx != NULL) {
@@ -508,6 +511,9 @@ int tls13_change_cipher_state(SSL *s, int which)
             label = client_early_traffic;
             labellen = sizeof(client_early_traffic) - 1;
             log_label = CLIENT_EARLY_LABEL;
+#ifndef OPENSSL_NO_QUIC
+            level = ssl_encryption_early_data;
+#endif
 
             handlen = BIO_get_mem_data(s->s3.handshake_buffer, &hdata);
             if (handlen <= 0) {
@@ -563,6 +569,9 @@ int tls13_change_cipher_state(SSL *s, int which)
                 goto err;
             }
             hashlen = hashlenui;
+#ifndef OPENSSL_NO_QUIC
+            s->quic_len = hashlen;
+#endif
             EVP_MD_CTX_free(mdctx);
 
             if (!tls13_hkdf_expand(s, md, insecret,
@@ -581,6 +590,14 @@ int tls13_change_cipher_state(SSL *s, int which)
                 /* SSLfatal() already called */
                 goto err;
             }
+#ifndef OPENSSL_NO_QUIC
+            if (SSL_IS_QUIC(s)) {
+                if (s->server)
+                    s->quic_read_level = ssl_encryption_early_data;
+                else
+                    s->quic_write_level = ssl_encryption_early_data;
+            }
+#endif
         } else if (which & SSL3_CC_HANDSHAKE) {
             insecret = s->handshake_secret;
             finsecret = s->client_finished_secret;
@@ -588,6 +605,15 @@ int tls13_change_cipher_state(SSL *s, int which)
             label = client_handshake_traffic;
             labellen = sizeof(client_handshake_traffic) - 1;
             log_label = CLIENT_HANDSHAKE_LABEL;
+#ifndef OPENSSL_NO_QUIC
+            if (SSL_IS_QUIC(s)) {
+                level = ssl_encryption_handshake;
+                if (s->server)
+                    s->quic_read_level = ssl_encryption_handshake;
+                else
+                    s->quic_write_level = ssl_encryption_handshake;
+            }
+#endif
             /*
              * The handshake hash used for the server read/client write handshake
              * traffic secret is the same as the hash for the server
@@ -610,6 +636,15 @@ int tls13_change_cipher_state(SSL *s, int which)
              * previously saved value.
              */
             hash = s->server_finished_hash;
+#ifndef OPENSSL_NO_QUIC
+            if (SSL_IS_QUIC(s)) {
+                level = ssl_encryption_application; /* ??? */
+                if (s->server)
+                    s->quic_read_level = ssl_encryption_application;
+                else
+                    s->quic_write_level = ssl_encryption_application;
+            }
+#endif
         }
     } else {
         /* Early data never applies to client-read/server-write */
@@ -620,11 +655,29 @@ int tls13_change_cipher_state(SSL *s, int which)
             label = server_handshake_traffic;
             labellen = sizeof(server_handshake_traffic) - 1;
             log_label = SERVER_HANDSHAKE_LABEL;
+#ifndef OPENSSL_NO_QUIC
+            if (SSL_IS_QUIC(s)) {
+                level = ssl_encryption_handshake;
+                if (s->server)
+                    s->quic_write_level = ssl_encryption_handshake;
+                else
+                    s->quic_read_level = ssl_encryption_handshake;
+            }
+#endif
         } else {
             insecret = s->master_secret;
             label = server_application_traffic;
             labellen = sizeof(server_application_traffic) - 1;
             log_label = SERVER_APPLICATION_LABEL;
+#ifndef OPENSSL_NO_QUIC
+            if (SSL_IS_QUIC(s)) {
+                level = ssl_encryption_application;
+                if (s->server)
+                    s->quic_write_level = ssl_encryption_application;
+                else
+                    s->quic_read_level = ssl_encryption_application;
+            }
+#endif
         }
     }
 
@@ -706,6 +759,12 @@ int tls13_change_cipher_state(SSL *s, int which)
         s->statem.enc_write_state = ENC_WRITE_STATE_WRITE_PLAIN_ALERTS;
     else
         s->statem.enc_write_state = ENC_WRITE_STATE_VALID;
+
+#ifndef OPENSSL_NO_QUIC
+    if (!quic_set_encryption_secrets(s, level))
+        goto err;
+#endif
+
     ret = 1;
  err:
     OPENSSL_cleanse(secret, sizeof(secret));

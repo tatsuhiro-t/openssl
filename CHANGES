@@ -9,6 +9,9 @@
 
  Changes between 1.1.1 and 3.0.0 [xx XXX xxxx]
 
+  *) Implement BoringSSL's QUIC API
+     [Todd Short]
+
   *) Early start up entropy quality from the DEVRANDOM seed source has been
      improved for older Linux systems.  The RAND subsystem will wait for
      /dev/random to be producing output before seeding from /dev/urandom.

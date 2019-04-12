@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -146,6 +146,9 @@ extern "C" {
 
 /* Temporary extension type */
 # define TLSEXT_TYPE_renegotiate                 0xff01
+
+/* ExtensionType value from draft-ietf-quic-tls-13 */
+# define TLSEXT_TYPE_quic_transport_parameters   0xffa5
 
 # ifndef OPENSSL_NO_NEXTPROTONEG
 /* This is not an IANA defined extension number */

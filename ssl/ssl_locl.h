@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2019 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -318,6 +318,13 @@
 
 /* Flag used on OpenSSL ciphersuite ids to indicate they are for SSLv3+ */
 # define SSL3_CK_CIPHERSUITE_FLAG                0x03000000
+
+/* Check if an SSL structure is using QUIC (which uses TLSv1.3) */
+# ifndef OPENSSL_NO_QUIC
+#  define SSL_IS_QUIC(s)  (s->quic_method != NULL)
+# else
+#  define SSL_IS_QUIC(s) 0
+# endif
 
 /* Check if an SSL structure is using DTLS */
 # define SSL_IS_DTLS(s)  (s->method->ssl3_enc->enc_flags & SSL_ENC_FLAG_DTLS)
@@ -719,6 +726,7 @@ typedef enum tlsext_index_en {
     TLSEXT_IDX_cryptopro_bug,
     TLSEXT_IDX_early_data,
     TLSEXT_IDX_certificate_authorities,
+    TLSEXT_IDX_quic_transport_params,
     TLSEXT_IDX_padding,
     TLSEXT_IDX_psk,
     /* Dummy index - must always be the last entry */
@@ -1073,9 +1081,22 @@ struct ssl_ctx_st {
     /* Callback for SSL async handling */
     SSL_async_callback_fn async_cb;
     void *async_cb_arg;
+#ifndef OPENSSL_NO_QUIC
+    const SSL_QUIC_METHOD *quic_method;
+#endif
 };
 
 typedef struct cert_pkey_st CERT_PKEY;
+
+#ifndef OPENSSL_NO_QUIC
+struct quic_data_st {
+    struct quic_data_st *next;
+    OSSL_ENCRYPTION_LEVEL level;
+    size_t length;
+};
+typedef struct quic_data_st QUIC_DATA;
+int quic_set_encryption_secrets(SSL *ssl, OSSL_ENCRYPTION_LEVEL level);
+#endif
 
 struct ssl_st {
     /*
@@ -1548,8 +1569,23 @@ struct ssl_st {
          * selected.
          */
         int tick_identity;
+
+#ifndef OPENSSL_NO_QUIC
+        uint8_t *quic_transport_params;
+        size_t quic_transport_params_len;
+        uint8_t *peer_quic_transport_params;
+        size_t peer_quic_transport_params_len;
+#endif
     } ext;
 
+#ifndef OPENSSL_NO_QUIC
+    OSSL_ENCRYPTION_LEVEL quic_read_level;
+    OSSL_ENCRYPTION_LEVEL quic_write_level;
+    QUIC_DATA *quic_input_data_head;
+    QUIC_DATA *quic_input_data_tail;
+    const SSL_QUIC_METHOD *quic_method;
+    size_t quic_len;
+#endif
     /*
      * Parsed form of the ClientHello, kept around across client_hello_cb
      * calls.
