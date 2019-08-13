@@ -3776,6 +3776,14 @@ int SSL_do_handshake(SSL *s)
             ret = s->handshake_func(s);
         }
     }
+
+    if (SSL_IS_QUIC(s) && !s->server && ret == 1
+        && s->early_data_state == SSL_EARLY_DATA_CONNECTING) {
+        s->early_data_state = SSL_EARLY_DATA_WRITE_RETRY;
+        s->rwstate = SSL_READING;
+        ret = 0;
+    }
+
     return ret;
 }
 

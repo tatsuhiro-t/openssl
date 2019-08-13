@@ -464,6 +464,31 @@ int tls13_change_cipher_state(SSL *s, int which)
 #ifndef OPENSSL_NO_QUIC
     OSSL_ENCRYPTION_LEVEL level = ssl_encryption_initial;
 #endif
+    int install_quic_secrets = 0;
+
+#if 0
+    if (which & SSL3_CC_CLIENT) {
+        fprintf(stderr, "client");
+    } else if (which & SSL3_CC_SERVER) {
+        fprintf(stderr, "server");
+    } else {
+        fprintf(stderr, "<na>");
+    }
+    if (which & SSL3_CC_READ) {
+        fprintf(stderr, " read");
+    } else if (which & SSL3_CC_WRITE) {
+        fprintf(stderr, " write");
+    } else {
+        fprintf(stderr, " <noop>");
+    }
+    if (which & SSL3_CC_EARLY) {
+        fprintf(stderr, " early");
+    }
+    if (which & SSL3_CC_HANDSHAKE) {
+        fprintf(stderr, " handshake");
+    }
+    fprintf(stderr, "\n");
+#endif
 
     if (which & SSL3_CC_READ) {
         if (s->enc_read_ctx != NULL) {
@@ -688,6 +713,63 @@ int tls13_change_cipher_state(SSL *s, int which)
         }
     }
 
+    if ((which & SSL3_CC_EARLY)
+        && (((which & SSL3_CC_CLIENT) && (which & SSL3_CC_WRITE))
+            || ((which & SSL3_CC_SERVER) && (which & SSL3_CC_READ)))) {
+        if (!tls13_hkdf_expand(s, md, insecret, label, labellen, hash, hashlen,
+                               secret, hashlen, 1)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+        memcpy(s->client_early_traffic_secret, secret, hashlen);
+
+        install_quic_secrets = 1;
+    }
+
+    if (label == server_handshake_traffic && (which & SSL3_CC_HANDSHAKE)
+        && (((which & SSL3_CC_CLIENT) && (which & SSL3_CC_READ))
+            || ((which & SSL3_CC_SERVER) && (which & SSL3_CC_WRITE)))) {
+        md = ssl_handshake_md(s);
+        hashlen = EVP_MD_size(md);
+        if (!tls13_hkdf_expand(s, md, insecret, client_handshake_traffic,
+                               sizeof(client_handshake_traffic) - 1, hash,
+                               hashlen, secret, hashlen, 1)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+        memcpy(s->client_hand_traffic_secret, secret, hashlen);
+        if (!tls13_hkdf_expand(s, md, insecret, label, labellen, hash, hashlen,
+                               secret, hashlen, 1)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+        memcpy(s->server_hand_traffic_secret, secret, hashlen);
+
+        install_quic_secrets = 1;
+    }
+
+    if (label == server_application_traffic && !(which & SSL3_CC_HANDSHAKE)
+        && (((which & SSL3_CC_CLIENT) && (which & SSL3_CC_READ))
+            || ((which & SSL3_CC_SERVER) && (which & SSL3_CC_WRITE)))) {
+        md = ssl_handshake_md(s);
+        hashlen = EVP_MD_size(md);
+        if (!tls13_hkdf_expand(s, md, insecret, client_application_traffic,
+                               sizeof(client_application_traffic) - 1, hash,
+                               hashlen, secret, hashlen, 1)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+        memcpy(s->client_app_traffic_secret, secret, hashlen);
+        if (!tls13_hkdf_expand(s, md, insecret, label, labellen, hash, hashlen,
+                               secret, hashlen, 1)) {
+            /* SSLfatal() already called */
+            goto err;
+        }
+        memcpy(s->server_app_traffic_secret, secret, hashlen);
+
+        install_quic_secrets = 1;
+    }
+
     /*
      * Save the hash of handshakes up to now for use when we calculate the
      * client application traffic secret
@@ -721,7 +803,6 @@ int tls13_change_cipher_state(SSL *s, int which)
     }
 
     if (label == server_application_traffic) {
-        memcpy(s->server_app_traffic_secret, secret, hashlen);
         /* Now we create the exporter master secret */
         if (!tls13_hkdf_expand(s, ssl_handshake_md(s), insecret,
                                exporter_master_secret,
@@ -737,14 +818,7 @@ int tls13_change_cipher_state(SSL *s, int which)
             /* SSLfatal() already called */
             goto err;
         }
-    } else if (label == client_application_traffic)
-        memcpy(s->client_app_traffic_secret, secret, hashlen);
-#ifndef OPENSSL_NO_QUIC
-    else if (label == client_handshake_traffic)
-        memcpy(s->client_hand_traffic_secret, secret, hashlen);
-    else if (label == server_handshake_traffic)
-        memcpy(s->server_hand_traffic_secret, secret, hashlen);
-#endif
+    }
 
     if (!ssl_log_secret(s, log_label, secret, hashlen)) {
         /* SSLfatal() already called */
@@ -764,7 +838,7 @@ int tls13_change_cipher_state(SSL *s, int which)
         s->statem.enc_write_state = ENC_WRITE_STATE_VALID;
 
 #ifndef OPENSSL_NO_QUIC
-    if (!quic_set_encryption_secrets(s, level))
+    if (install_quic_secrets && !quic_set_encryption_secrets(s, level))
         goto err;
 #endif
 
