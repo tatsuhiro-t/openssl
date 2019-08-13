@@ -450,7 +450,7 @@ static WRITE_TRAN ossl_statem_client13_write_transition(SSL *s)
         return WRITE_TRAN_CONTINUE;
 
     case TLS_ST_PENDING_EARLY_DATA_END:
-        if (s->ext.early_data == SSL_EARLY_DATA_ACCEPTED) {
+        if (!SSL_IS_QUIC(s) && s->ext.early_data == SSL_EARLY_DATA_ACCEPTED) {
             st->hand_state = TLS_ST_CW_END_OF_EARLY_DATA;
             return WRITE_TRAN_CONTINUE;
         }
