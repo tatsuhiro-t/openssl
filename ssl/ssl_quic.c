@@ -173,7 +173,7 @@ int SSL_CTX_set_quic_method(SSL_CTX *ctx, const SSL_QUIC_METHOD *quic_method)
         break;
     }
     ctx->quic_method = quic_method;
-    ctx->options &= SSL_OP_ENABLE_MIDDLEBOX_COMPAT;
+    ctx->options &= ~SSL_OP_ENABLE_MIDDLEBOX_COMPAT;
     return 1;
 }
 
@@ -189,7 +189,7 @@ int SSL_set_quic_method(SSL *ssl, const SSL_QUIC_METHOD *quic_method)
         break;
     }
     ssl->quic_method = quic_method;
-    ssl->options &= SSL_OP_ENABLE_MIDDLEBOX_COMPAT;
+    ssl->options &= ~SSL_OP_ENABLE_MIDDLEBOX_COMPAT;
     return 1;
 }
 
@@ -207,7 +207,7 @@ int quic_set_encryption_secrets(SSL *ssl, OSSL_ENCRYPTION_LEVEL level)
     /* secrets from the POV of the client */
     switch (level) {
     case ssl_encryption_early_data:
-        s2c_secret = ssl->early_secret;
+        c2s_secret = ssl->client_early_traffic_secret;
         break;
     case ssl_encryption_handshake:
         c2s_secret = ssl->client_hand_traffic_secret;
@@ -268,6 +268,8 @@ int quic_set_encryption_secrets(SSL *ssl, OSSL_ENCRYPTION_LEVEL level)
 
 int SSL_process_quic_post_handshake(SSL *ssl)
 {
+    int rv;
+
     if (SSL_in_init(ssl) || !SSL_IS_QUIC(ssl)) {
         SSLerr(SSL_F_SSL_PROCESS_QUIC_POST_HANDSHAKE, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
         return 0;
@@ -275,7 +277,11 @@ int SSL_process_quic_post_handshake(SSL *ssl)
 
     ossl_statem_set_in_init(ssl, 1);
 
-    if (ssl->handshake_func(ssl) <= 0)
+    rv = ssl->handshake_func(ssl);
+
+    ossl_statem_set_in_init(ssl, 0);
+
+    if (rv <= 0)
         return 0;
 
     return 1;
@@ -284,6 +290,23 @@ int SSL_process_quic_post_handshake(SSL *ssl)
 int SSL_is_quic(SSL* ssl)
 {
     return SSL_IS_QUIC(ssl);
+}
+
+void SSL_set_quic_early_data_enabled(SSL *ssl, int enabled)
+{
+    if (!SSL_is_quic(ssl) || !SSL_in_before(ssl))
+        return;
+
+    if (ssl->server) {
+        ssl->early_data_state = SSL_EARLY_DATA_ACCEPTING;
+        return;
+    }
+
+    if (((ssl->session == NULL || ssl->session->ext.max_early_data == 0)
+         && (ssl->psk_use_session_cb == NULL)))
+        return;
+
+    ssl->early_data_state = SSL_EARLY_DATA_CONNECTING;
 }
 
 #endif

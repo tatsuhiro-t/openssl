@@ -18,10 +18,10 @@ NON_EMPTY_TRANSLATION_UNIT
 int quic_get_message(SSL *s, int *mt, size_t *len)
 {
     size_t l;
-    QUIC_DATA *qd;
+    QUIC_DATA *qd = s->quic_input_data_head;
     uint8_t *p;
 
-    if (s->quic_input_data_head == NULL) {
+    if (qd == NULL || qd->offset != qd->length) {
         s->rwstate = SSL_READING;
         *len = 0;
         return 0;
