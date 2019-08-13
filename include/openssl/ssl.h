@@ -2473,6 +2473,8 @@ __owur int SSL_process_quic_post_handshake(SSL *ssl);
 
 __owur int SSL_is_quic(SSL *ssl);
 
+void SSL_set_quic_early_data_enabled(SSL *ssl, int enabled);
+
 #  endif
 
 int SSL_CIPHER_get_prf_nid(const SSL_CIPHER *c);
