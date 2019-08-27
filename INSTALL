@@ -480,7 +480,7 @@
                    Don't build support for Pre-Shared Key based ciphersuites.
 
   no-quic
-                   Don't build support for QUIC support.
+                   Don't build with support for QUIC.
 
   no-rdrand
                    Don't use hardware RDRAND capabilities.
