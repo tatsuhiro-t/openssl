@@ -591,10 +591,13 @@ static int quic_change_cipher_state(SSL *s, int which)
             level = ssl_encryption_application;
         }
 
-        if (s->server)
-            s->quic_read_level = level;
-        else
-            s->quic_write_level = level;
+        if (level != ssl_encryption_early_data) {
+            if (s->server)
+                s->quic_read_level = level;
+            else {
+                s->quic_write_level = level;
+            }
+        }
     }
 
     if (((which & SSL3_CC_CLIENT) && (which & SSL3_CC_WRITE))
