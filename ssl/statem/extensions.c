@@ -1727,6 +1727,13 @@ static int init_quic_transport_params(SSL *s, unsigned int context)
 
 static int final_quic_transport_params(SSL *s, unsigned int context, int sent)
 {
+    if (!sent) {
+        SSLfatal(s, SSL_AD_MISSING_EXTENSION,
+                 SSL_F_FINAL_QUIC_TRANSPORT_PARAMS,
+                 SSL_R_MISSING_QUIC_TRANSPORT_PARAMETERS_EXTENSION);
+        return 0;
+    }
+
     return 1;
 }
 #endif

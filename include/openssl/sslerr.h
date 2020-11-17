@@ -68,6 +68,7 @@ int ERR_load_SSL_strings(void);
 # define SSL_F_FINAL_EMS                                  486
 # define SSL_F_FINAL_KEY_SHARE                            503
 # define SSL_F_FINAL_MAXFRAGMENTLEN                       557
+# define SSL_F_FINAL_QUIC_TRANSPORT_PARAMS                651
 # define SSL_F_FINAL_RENEGOTIATE                          483
 # define SSL_F_FINAL_SERVER_NAME                          558
 # define SSL_F_FINAL_SIG_ALGS                             497
@@ -603,6 +604,7 @@ int ERR_load_SSL_strings(void);
 # define SSL_R_MISSING_ECDSA_SIGNING_CERT                 381
 # define SSL_R_MISSING_FATAL                              256
 # define SSL_R_MISSING_PARAMETERS                         290
+# define SSL_R_MISSING_QUIC_TRANSPORT_PARAMETERS_EXTENSION 296
 # define SSL_R_MISSING_RSA_CERTIFICATE                    168
 # define SSL_R_MISSING_RSA_ENCRYPTING_CERT                169
 # define SSL_R_MISSING_RSA_SIGNING_CERT                   170
