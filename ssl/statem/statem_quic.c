@@ -56,11 +56,15 @@ int quic_get_message(SSL *s, int *mt, size_t *len)
     s->init_num = s->s3->tmp.message_size = *len = l;
     s->init_msg = s->init_buf->data + SSL3_HM_HEADER_LENGTH;
 
-    /* No CCS in QUIC/TLSv1.3? */
-    if (*mt == SSL3_MT_CHANGE_CIPHER_SPEC) {
-        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE,
-                 SSL_F_QUIC_GET_MESSAGE,
+    switch (*mt) {
+    case SSL3_MT_CHANGE_CIPHER_SPEC:
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, SSL_F_QUIC_GET_MESSAGE,
                  SSL_R_CCS_RECEIVED_EARLY);
+        *len = 0;
+        return 0;
+    case SSL3_MT_KEY_UPDATE:
+        SSLfatal(s, SSL_AD_UNEXPECTED_MESSAGE, SSL_F_QUIC_GET_MESSAGE,
+                 SSL_R_QUIC_KEY_UPDATE_RECEIVED);
         *len = 0;
         return 0;
     }
