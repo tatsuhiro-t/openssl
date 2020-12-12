@@ -1210,7 +1210,8 @@ void SSL_free(SSL *s)
 
 #ifndef OPENSSL_NO_QUIC
     OPENSSL_free(s->ext.quic_transport_params);
-    OPENSSL_free(s->ext.peer_quic_transport_params);
+    OPENSSL_free(s->ext.peer_quic_transport_params_draft);
+    OPENSSL_free(s->ext.peer_quic_transport_params_v1);
     while (s->quic_input_data_head != NULL) {
         QUIC_DATA *qd;
 

@@ -58,7 +58,10 @@ static int final_maxfragmentlen(SSL *s, unsigned int context, int sent);
 static int init_post_handshake_auth(SSL *s, unsigned int context);
 #ifndef OPENSSL_NO_QUIC
 static int init_quic_transport_params(SSL *s, unsigned int context);
-static int final_quic_transport_params(SSL *s, unsigned int context, int sent);
+static int final_quic_transport_params_draft(SSL *s, unsigned int context,
+                                             int sent);
+static int final_quic_transport_params_v1(SSL *s, unsigned int context,
+                                          int sent);
 #endif
 
 /* Structure to define a built-in extension */
@@ -379,13 +382,22 @@ static const EXTENSION_DEFINITION ext_defs[] = {
     },
 #ifndef OPENSSL_NO_QUIC
     {
-        TLSEXT_TYPE_quic_transport_parameters,
+        TLSEXT_TYPE_quic_transport_parameters_draft,
         SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
         | SSL_EXT_TLS_IMPLEMENTATION_ONLY | SSL_EXT_TLS1_3_ONLY,
         init_quic_transport_params,
-        tls_parse_ctos_quic_transport_params, tls_parse_stoc_quic_transport_params,
-        tls_construct_stoc_quic_transport_params, tls_construct_ctos_quic_transport_params,
-        final_quic_transport_params,
+        tls_parse_ctos_quic_transport_params_draft, tls_parse_stoc_quic_transport_params_draft,
+        tls_construct_stoc_quic_transport_params_draft, tls_construct_ctos_quic_transport_params_draft,
+        final_quic_transport_params_draft,
+    },
+    {
+        TLSEXT_TYPE_quic_transport_parameters_v1,
+        SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_ENCRYPTED_EXTENSIONS
+        | SSL_EXT_TLS_IMPLEMENTATION_ONLY | SSL_EXT_TLS1_3_ONLY,
+        init_quic_transport_params,
+        tls_parse_ctos_quic_transport_params_v1, tls_parse_stoc_quic_transport_params_v1,
+        tls_construct_stoc_quic_transport_params_v1, tls_construct_ctos_quic_transport_params_v1,
+        final_quic_transport_params_v1,
     },
 #else
     INVALID_EXTENSION,
@@ -1725,9 +1737,17 @@ static int init_quic_transport_params(SSL *s, unsigned int context)
     return 1;
 }
 
-static int final_quic_transport_params(SSL *s, unsigned int context, int sent)
+static int final_quic_transport_params_draft(SSL *s, unsigned int context,
+                                             int sent)
 {
-    if (!sent) {
+    return 1;
+}
+
+static int final_quic_transport_params_v1(SSL *s, unsigned int context,
+                                          int sent)
+{
+    if (s->ext.peer_quic_transport_params_draft_len == 0
+        && s->ext.peer_quic_transport_params_v1_len == 0) {
         SSLfatal(s, SSL_AD_MISSING_EXTENSION,
                  SSL_F_FINAL_QUIC_TRANSPORT_PARAMS,
                  SSL_R_MISSING_QUIC_TRANSPORT_PARAMETERS_EXTENSION);

@@ -39,8 +39,13 @@ void SSL_get_peer_quic_transport_params(const SSL *ssl,
                                         const uint8_t **out_params,
                                         size_t *out_params_len)
 {
-    *out_params = ssl->ext.peer_quic_transport_params;
-    *out_params_len = ssl->ext.peer_quic_transport_params_len;
+    if (ssl->ext.peer_quic_transport_params_v1_len) {
+        *out_params = ssl->ext.peer_quic_transport_params_v1;
+        *out_params_len = ssl->ext.peer_quic_transport_params_v1_len;
+    } else {
+        *out_params = ssl->ext.peer_quic_transport_params_draft;
+        *out_params_len = ssl->ext.peer_quic_transport_params_draft_len;
+    }
 }
 
 size_t SSL_quic_max_handshake_flight_len(const SSL *ssl, OSSL_ENCRYPTION_LEVEL level)
