@@ -235,7 +235,7 @@ int quic_set_encryption_secrets(SSL *ssl, OSSL_ENCRYPTION_LEVEL level)
 {
     uint8_t *c2s_secret = NULL;
     uint8_t *s2c_secret = NULL;
-    int len;
+    size_t len;
     const EVP_MD *md;
 
     if (!SSL_IS_QUIC(ssl))
@@ -311,16 +311,14 @@ int quic_set_encryption_secrets(SSL *ssl, OSSL_ENCRYPTION_LEVEL level)
 
     if (ssl->server) {
         if (!ssl->quic_method->set_encryption_secrets(ssl, level, c2s_secret,
-                                                      s2c_secret,
-                                                      (size_t)len)) {
+                                                      s2c_secret, len)) {
             SSLfatal(ssl, SSL_AD_INTERNAL_ERROR, SSL_F_QUIC_SET_ENCRYPTION_SECRETS,
                      ERR_R_INTERNAL_ERROR);
             return 0;
         }
     } else {
         if (!ssl->quic_method->set_encryption_secrets(ssl, level, s2c_secret,
-                                                      c2s_secret,
-                                                      (size_t)len)) {
+                                                      c2s_secret, len)) {
             SSLfatal(ssl, SSL_AD_INTERNAL_ERROR, SSL_F_QUIC_SET_ENCRYPTION_SECRETS,
                      ERR_R_INTERNAL_ERROR);
             return 0;
