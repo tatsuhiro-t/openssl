@@ -261,8 +261,8 @@ int quic_set_encryption_secrets(SSL *ssl, OSSL_ENCRYPTION_LEVEL level)
     if (level == ssl_encryption_early_data) {
         const SSL_CIPHER *c = SSL_SESSION_get0_cipher(ssl->session);
         if (ssl->early_data_state == SSL_EARLY_DATA_CONNECTING
-            && ssl->max_early_data > 0
-            && ssl->session->ext.max_early_data == 0) {
+                && ssl->max_early_data > 0
+                && ssl->session->ext.max_early_data == 0) {
             if (!ossl_assert(ssl->psksession != NULL
                              && ssl->max_early_data
                                     == ssl->psksession->ext.max_early_data)) {
@@ -375,8 +375,8 @@ void SSL_set_quic_early_data_enabled(SSL *ssl, int enabled)
         return;
     }
 
-    if (((ssl->session == NULL || ssl->session->ext.max_early_data == 0)
-         && (ssl->psk_use_session_cb == NULL)))
+    if ((ssl->session == NULL || ssl->session->ext.max_early_data == 0)
+            && ssl->psk_use_session_cb == NULL)
         return;
 
     ssl->early_data_state = SSL_EARLY_DATA_CONNECTING;

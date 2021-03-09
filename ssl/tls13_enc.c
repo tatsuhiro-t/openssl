@@ -483,7 +483,7 @@ static int quic_change_cipher_state(SSL *s, int which)
         }
 
         if (s->early_data_state == SSL_EARLY_DATA_CONNECTING
-            && s->max_early_data > 0 && s->session->ext.max_early_data == 0) {
+                && s->max_early_data > 0 && s->session->ext.max_early_data == 0) {
             /*
              * If we are attempting to send early data, and we've decided to
              * actually do it but max_early_data in s->session is 0 then we
@@ -517,8 +517,8 @@ static int quic_change_cipher_state(SSL *s, int which)
         }
         md = ssl_md(sslcipher->algorithm2);
         if (md == NULL || !EVP_DigestInit_ex(mdctx, md, NULL)
-            || !EVP_DigestUpdate(mdctx, hdata, handlen)
-            || !EVP_DigestFinal_ex(mdctx, hash, &hashlenui)) {
+                || !EVP_DigestUpdate(mdctx, hdata, handlen)
+                || !EVP_DigestFinal_ex(mdctx, hash, &hashlenui)) {
             SSLfatal(s, SSL_AD_INTERNAL_ERROR, SSL_F_QUIC_CHANGE_CIPHER_STATE,
                      ERR_R_INTERNAL_ERROR);
             EVP_MD_CTX_free(mdctx);
@@ -529,7 +529,7 @@ static int quic_change_cipher_state(SSL *s, int which)
     } else {
         md = ssl_handshake_md(s);
         if (!ssl3_digest_cached_records(s, 1)
-            || !ssl_handshake_hash(s, hash, sizeof(hash), &hashlen)) {
+                || !ssl_handshake_hash(s, hash, sizeof(hash), &hashlen)) {
             /* SSLfatal() already called */;
             goto err;
         }
