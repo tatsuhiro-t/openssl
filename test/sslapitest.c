@@ -8764,7 +8764,7 @@ end:
     return testresult;
 }
 
-#ifndef OSSL_NO_USABLE_TLS1_3
+# ifndef OSSL_NO_USABLE_TLS1_3
 /*
  * Helper method to setup objects for QUIC early data test. Caller
  * frees objects on error.
@@ -8915,7 +8915,7 @@ static int test_quic_early_data(int tst)
     SSL_CTX_free(cctx);
     return testresult;
 }
-#endif /* OSSL_NO_USABLE_TLS1_3 */
+# endif /* OSSL_NO_USABLE_TLS1_3 */
 #endif /* OPENSSL_NO_QUIC */
 
 OPT_TEST_DECLARE_USAGE("certfile privkeyfile srpvfile tmpfile provider config\n")
@@ -9167,9 +9167,9 @@ int setup_tests(void)
 #endif
 #ifndef OPENSSL_NO_QUIC
     ADD_ALL_TESTS(test_quic_api, 9);
-#ifndef OSSL_NO_USABLE_TLS1_3
+# ifndef OSSL_NO_USABLE_TLS1_3
     ADD_ALL_TESTS(test_quic_early_data, 3);
-#endif
+# endif
 #endif
     return 1;
 
