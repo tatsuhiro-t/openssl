@@ -1746,12 +1746,14 @@ static int final_quic_transport_params_draft(SSL *s, unsigned int context,
 static int final_quic_transport_params_v1(SSL *s, unsigned int context,
                                           int sent)
 {
-    if (s->ext.peer_quic_transport_params_draft_len == 0
-        && s->ext.peer_quic_transport_params_v1_len == 0) {
-        SSLfatal(s, SSL_AD_MISSING_EXTENSION,
-                 SSL_F_FINAL_QUIC_TRANSPORT_PARAMS,
-                 SSL_R_MISSING_QUIC_TRANSPORT_PARAMETERS_EXTENSION);
-        return 0;
+    if (s->quic_method != NULL) {
+        if (s->ext.peer_quic_transport_params_draft_len == 0
+            && s->ext.peer_quic_transport_params_v1_len == 0) {
+            SSLfatal(s, SSL_AD_MISSING_EXTENSION,
+                    SSL_F_FINAL_QUIC_TRANSPORT_PARAMS,
+                    SSL_R_MISSING_QUIC_TRANSPORT_PARAMETERS_EXTENSION);
+            return 0;
+        }
     }
 
     return 1;
